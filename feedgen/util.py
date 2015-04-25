@@ -9,6 +9,7 @@
 	:license: FreeBSD and LGPL, see license.* for more details.
 '''
 import sys
+from lxml import etree
 
 
 def ensure_format(val, allowed, required, allowed_values=None, defaults=None):
@@ -60,3 +61,30 @@ def ensure_format(val, allowed, required, allowed_values=None, defaults=None):
 			if elem.get(k) and not elem[k] in v:
 				raise ValueError('Invalid value for %s' % k )
 	return val
+
+
+def atom_content(element, text, typ=None, cdata=False):
+	if cdata:
+		element.text = etree.CDATA(text)
+	else:
+		# Surround xhtml with a div tag, parse it and embed it
+		if typ == 'xhtml':
+			content.append(etree.fromstring(
+				'<div xmlns="http://www.w3.org/1999/xhtml">%s</div>' % text))
+		# Embed the text in escaped form
+		elif not typ or typ.startswith('text') or typ == 'html':
+			element.text = text
+		# Parse XML and embed it
+		elif typ.endswith('/xml') or typ.endswith('+xml'):
+			element.append(etree.fromstring(text))
+		# Everything else should be included base64 encoded
+		else:
+			raise ValueError(
+				'base64 encoded content is not supported at the moment.'
+				+ 'If you are interested , please file a bug report.')
+
+	# Add type description of the content
+	if typ:
+		element.attrib['type'] = typ
+
+	return element

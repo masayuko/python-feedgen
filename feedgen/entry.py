@@ -12,7 +12,7 @@ from lxml import etree
 from datetime import datetime
 import dateutil.parser
 import dateutil.tz
-from feedgen.util import ensure_format
+from feedgen.util import ensure_format, atom_content
 from feedgen.compat import string_types
 
 
@@ -94,30 +94,12 @@ class FeedEntry(object):
 
 		if self.__atom_content:
 			content = etree.SubElement(entry, 'content')
-			type = self.__atom_content.get('type')
+			typ = self.__atom_content.get('type')
 			if self.__atom_content.get('src'):
 				content.attrib['src'] = self.__atom_content['src']
 			elif self.__atom_content.get('content'):
-				# Surround xhtml with a div tag, parse it and embed it
-				if type == 'xhtml':
-					content.append(etree.fromstring('''<div
-							xmlns="http://www.w3.org/1999/xhtml">%s</div>''' % \
-							self.__atom_content.get('content')))
-				elif type == 'CDATA':
-					content.text = etree.CDATA(self.__atom_content['content'])
-				# Emed the text in escaped form
-				elif not type or type.startswith('text') or type == 'html':
-					content.text = self.__atom_content.get('content')
-				# Parse XML and embed it
-				elif type.endswith('/xml') or type.endswith('+xml'):
-					content.append(etree.fromstring(self.__atom_content['content']))
-				# Everything else should be included base64 encoded
-				else:
-					raise ValueError('base64 encoded content is not supported at the moment.'
-							+ 'If you are interested , please file a bug report.')
-			# Add type description of the content
-			if type:
-				content.attrib['type'] = type
+				atom_content(content, self.__atom_content['content'],
+							 typ, self.__atom_content['CDATA'])
 
 		for l in self.__atom_link or []:
 			link = etree.SubElement(entry, 'link', href=l['href'])
@@ -191,7 +173,7 @@ class FeedEntry(object):
 			content = etree.SubElement(entry, '{%s}encoded' %
 									'http://purl.org/rss/1.0/modules/content/')
 			content.text = etree.CDATA(self.__rss_content['content']) \
-				if self.__rss_content.get('type', '') == 'CDATA' else self.__rss_content['content']
+				if self.__rss_content['CDATA'] else self.__rss_content['content']
 		elif self.__rss_description:
 			description = etree.SubElement(entry, 'description')
 			description.text = self.__rss_description
@@ -340,7 +322,7 @@ class FeedEntry(object):
 		return self.__atom_author
 
 
-	def content(self, content=None, src=None, type=None):
+	def content(self, content=None, src=None, type=None, cdata=False):
 		'''Get or set the cntent of the entry which contains or links to the
 		complete content of the entry. Content must be provided for ATOM entries
 		if there is no alternate link, and should be provided if there is no
@@ -349,7 +331,8 @@ class FeedEntry(object):
 
 		:param content: The content of the feed entry.
 		:param src: Link to the entries content.
-		:param type: If type is CDATA content would not be escaped.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: Content element of the entry.
 		'''
 		if not src is None:
@@ -360,6 +343,8 @@ class FeedEntry(object):
 			if not type is None:
 				self.__atom_content['type'] = type
 				self.__rss_content['type'] = type
+			self.__atom_content['CDATA'] = cdata
+			self.__rss_content['CDATA'] = cdata
 		return self.__atom_content
 
 
