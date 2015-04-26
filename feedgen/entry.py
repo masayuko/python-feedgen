@@ -342,7 +342,6 @@ class FeedEntry(object):
 			self.__rss_content = {'content':content}
 			if not type is None:
 				self.__atom_content['type'] = type
-				self.__rss_content['type'] = type
 			self.__atom_content['CDATA'] = cdata
 			self.__rss_content['CDATA'] = cdata
 		return self.__atom_content
