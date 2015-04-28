@@ -88,3 +88,25 @@ def atom_content(element, text, typ=None, cdata=False):
 		element.attrib['type'] = typ
 
 	return element
+
+
+def atom_text_construct(element, text, typ=None, cdata=False):
+	if cdata:
+		element.text = etree.CDATA(text)
+	else:
+		# Surround xhtml with a div tag, parse it and embed it
+		if typ == 'xhtml':
+			content.append(etree.fromstring(
+				'<div xmlns="http://www.w3.org/1999/xhtml">%s</div>' % text))
+		# Embed the text in escaped form
+		elif not typ or typ == 'text' or typ == 'html':
+			element.text = text
+		# Everything else should be included base64 encoded
+		else:
+			raise ValueError('unsupported type with atomTextConstruct.')
+
+	# Add type description of the content
+	if typ:
+		element.attrib['type'] = typ
+
+	return element

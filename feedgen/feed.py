@@ -14,7 +14,7 @@ from datetime import datetime
 import dateutil.parser
 import dateutil.tz
 from feedgen.entry import FeedEntry
-from feedgen.util import ensure_format
+from feedgen.util import ensure_format, atom_text_construct
 import feedgen.version
 import sys
 from feedgen.compat import string_types
@@ -36,7 +36,7 @@ class FeedGenerator(object):
 		# http://www.atomenabled.org/developers/syndication/
 		# required
 		self.__atom_id      = None
-		self.__atom_title   = None
+		self.__atom_title   = None # atomTextConstruct
 		self.__atom_updated = datetime.now(dateutil.tz.tzutc())
 
 		# recommended
@@ -52,8 +52,8 @@ class FeedGenerator(object):
 				'version':feedgen.version.version_str } #{value*,uri,version}
 		self.__atom_icon     = None
 		self.__atom_logo     = None
-		self.__atom_rights   = None
-		self.__atom_subtitle = None
+		self.__atom_rights   = None # atomTextConstruct
+		self.__atom_subtitle = None # atomTextConstruct
 
 		# other
 		self.__atom_feed_xml_lang = None
@@ -106,10 +106,12 @@ class FeedGenerator(object):
 					([] if self.__atom_id else ['id']) + \
 					([] if self.__atom_updated else ['updated']))
 			raise ValueError('Required fields not set (%s)' % missing)
-		id      = etree.SubElement(feed, 'id')
+		id = etree.SubElement(feed, 'id')
 		id.text = self.__atom_id
-		title   = etree.SubElement(feed, 'title')
-		title.text = self.__atom_title
+		title = etree.SubElement(feed, 'title')
+		atom_text_construct(title, self.__atom_title['title'],
+							self.__atom_title.get('type'),
+							self.__atom_title['CDATA'])
 		updated   = etree.SubElement(feed, 'updated')
 		updated.text = self.__atom_updated.isoformat()
 
@@ -181,11 +183,15 @@ class FeedGenerator(object):
 
 		if self.__atom_rights:
 			rights = etree.SubElement(feed, 'rights')
-			rights.text = self.__atom_rights
+			atom_text_construct(rights, self.__atom_rights['rights'],
+								self.__atom_rights.get('type'),
+								self.__atom_rights['CDATA'])
 
 		if self.__atom_subtitle:
 			subtitle = etree.SubElement(feed, 'subtitle')
-			subtitle.text = self.__atom_subtitle
+			atom_text_construct(subtitle, self.__atom_subtitle['subtitle'],
+								self.__atom_subtitle.get('type'),
+								self.__atom_subtitle['CDATA'])
 
 		if extensions:
 			for ext in self.__extensions.values() or []:
@@ -256,11 +262,14 @@ class FeedGenerator(object):
 					([] if self.__rss_description else ['description']))
 			raise ValueError('Required fields not set (%s)' % missing)
 		title = etree.SubElement(channel, 'title')
-		title.text = self.__rss_title
+		title.text = etree.CDATA(self.__rss_title['title']) \
+					 if self.__rss_title['CDATA'] else self.__rss_title['title']
 		link = etree.SubElement(channel, 'link')
 		link.text = self.__rss_link
 		desc = etree.SubElement(channel, 'description')
-		desc.text = self.__rss_description
+		desc.text = etree.CDATA(self.__rss_description['description']) \
+					if self.__rss_description['CDATA'] else \
+					   self.__rss_description['description']
 		for ln in  self.__atom_link or []:
 			# It is recommended to include a atom self link in rss documents…
 			if ln.get('rel') == 'self':
@@ -292,7 +301,9 @@ class FeedGenerator(object):
 			cloud.attrib['protocol'] = self.__rss_cloud.get('protocol')
 		if self.__rss_copyright:
 			copyright = etree.SubElement(channel, 'copyright')
-			copyright.text = self.__rss_copyright
+			copyright.text = etree.CDATA(self.__rss_copyright['copyright']) \
+					if self.__rss_copyright['CDATA'] else \
+					   self.__rss_copyright['copyright']
 		if self.__rss_docs:
 			docs = etree.SubElement(channel, 'docs')
 			docs.text = self.__rss_docs
@@ -305,7 +316,8 @@ class FeedGenerator(object):
 			url.text = self.__rss_image.get('url')
 			title = etree.SubElement(image, 'title')
 			title.text = self.__rss_image['title'] \
-					if self.__rss_image.get('title') else self.__rss_title
+					if self.__rss_image.get('title') else \
+					   self.__rss_title['title']
 			link = etree.SubElement(image, 'link')
 			link.text = self.__rss_image['link'] \
 					if self.__rss_image.get('link') else self.__rss_link
@@ -405,7 +417,7 @@ class FeedGenerator(object):
 				  xml_declaration=xml_declaration)
 
 
-	def title(self, title=None):
+	def title(self, title=None, type=None, cdata=False):
 		'''Get or set the title value of the feed. It should contain a human
 		readable title for the feed. Often the same as the title of the
 		associated website. Title is mandatory for both ATOM and RSS and should
@@ -413,10 +425,14 @@ class FeedGenerator(object):
 
 		:param title: The new title of the feed.
 		:returns: The feeds title.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		'''
 		if not title is None:
-			self.__atom_title = title
-			self.__rss_title = title
+			self.__atom_title = {'title':title, 'CDATA':cdata}
+			self.__rss_title = {'title':title, 'CDATA':cdata}
+			if type:
+				self.__atom_title['type'] = type
 		return self.__atom_title
 
 
@@ -525,9 +541,15 @@ class FeedGenerator(object):
 			self.__atom_author += ensure_format( author,
 					set(['name', 'email', 'uri']), set(['name']))
 			self.__rss_author = []
-			for a in self.__atom_author:
-				if a.get('email'):
-					self.__rss_author.append(a['email'])
+			if self.__extensions and \
+			   'dc' in self.__extensions and self.__extensions['dc']['rss']:
+				self.dc.dc_creator([x['name'] for x in self.__atom_author],
+								   replace)
+			else:
+				for a in self.__atom_author:
+					if a.get('email'):
+						self.__rss_author.append(
+							'%s (%s)' % ( a['email'], a['name'] ))
 		return self.__atom_author
 
 
@@ -755,54 +777,67 @@ class FeedGenerator(object):
 		return self.__rss_image
 
 
-	def rights(self, rights=None):
+	def rights(self, rights=None, type=None, cdata=False):
 		'''Get or set the rights value of the feed which conveys information
 		about rights, e.g. copyrights, held in and over the feed. This ATOM value
 		will also set rss:copyright.
 
 		:param rights: Rights information of the feed.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
+		:returns: Rights information of the feed.
 		'''
 		if not rights is None:
-			self.__atom_rights = rights
-			self.__rss_copyright = rights
+			self.__atom_rights = {'rights':rights, 'CDATA':cdata}
+			self.__rss_copyright = {'copyright':rights, 'CDATA':cdata}
+			if type:
+				self.__atom_rights['type'] = type
 		return self.__atom_rights
 
 
-	def copyright(self, copyright=None):
+	def copyright(self, copyright=None, type=None, cdata=False):
 		'''Get or set the copyright notice for content in the channel. This RSS
 		value will also set the atom:rights value.
 
 		:param copyright: The copyright notice.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: The copyright notice.
 		'''
-		return self.rights( copyright )
+		return self.rights(copyright, type, cdata)
 
 
-	def subtitle(self, subtitle=None):
+	def subtitle(self, subtitle=None, type=None, cdata=False):
 		'''Get or set the subtitle value of the cannel which contains a
 		human-readable description or subtitle for the feed. This ATOM property
 		will also set the value for rss:description.
 
 		:param subtitle: The subtitle of the feed.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: The subtitle of the feed.
 		'''
 		if not subtitle is None:
-			self.__atom_subtitle   = subtitle
-			self.__rss_description = subtitle
+			self.__atom_subtitle = {'subtitle':subtitle, 'CDATA':cdata}
+			self.__rss_description = {'description':subtitle, 'CDATA':cdata}
+			if type:
+				self.__atom_subtitle['type'] = type
 		return self.__atom_subtitle
 
 
-	def description(self, description=None):
+	def description(self, description=None, type=None, cdata=False):
 		'''Set and get the description of the feed. This is an RSS only element
 		which is a phrase or sentence describing the channel. It is mandatory for
 		RSS feeds. It is roughly the same as atom:subtitle. Thus setting this
 		will also set atom:subtitle.
 
 		:param description: Description of the channel.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: Description of the channel.
 
 		'''
-		return self.subtitle( description )
+		return self.subtitle(description, type, cdata)
 
 
 	def docs(self, docs=None):

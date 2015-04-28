@@ -12,7 +12,7 @@ from lxml import etree
 from datetime import datetime
 import dateutil.parser
 import dateutil.tz
-from feedgen.util import ensure_format, atom_content
+from feedgen.util import ensure_format, atom_content, atom_text_construct
 from feedgen.compat import string_types
 
 
@@ -25,21 +25,21 @@ class FeedEntry(object):
 		# ATOM
 		# required
 		self.__atom_id      = None
-		self.__atom_title   = None
+		self.__atom_title   = None # atomTextConstruct
 		self.__atom_updated = datetime.now(dateutil.tz.tzutc())
 
 		# recommended
 		self.__atom_author  = None
 		self.__atom_content = None
 		self.__atom_link    = None
-		self.__atom_summary = None
+		self.__atom_summary = None # atomTextConstruct
 
 		# optional
 		self.__atom_category    = None
 		self.__atom_contributor = None
 		self.__atom_published   = None
 		self.__atom_source      = None
-		self.__atom_rights      = None
+		self.__atom_rights      = None # atomTextConstruct
 
 		# RSS
 		self.__rss_author      = None
@@ -63,10 +63,12 @@ class FeedEntry(object):
 		entry = etree.Element('entry')
 		if not ( self.__atom_id and self.__atom_title and self.__atom_updated ):
 			raise ValueError('Required fields not set')
-		id      = etree.SubElement(entry, 'id')
+		id = etree.SubElement(entry, 'id')
 		id.text = self.__atom_id
-		title   = etree.SubElement(entry, 'title')
-		title.text = self.__atom_title
+		title = etree.SubElement(entry, 'title')
+		atom_text_construct(title, self.__atom_title['title'],
+							self.__atom_title.get('type'),
+							self.__atom_title['CDATA'])
 		updated   = etree.SubElement(entry, 'updated')
 		updated.text = self.__atom_updated.isoformat()
 
@@ -116,7 +118,9 @@ class FeedEntry(object):
 
 		if self.__atom_summary:
 			summary = etree.SubElement(entry, 'summary')
-			summary.text = self.__atom_summary
+			atom_text_construct(summary, self.__atom_summary['summary'],
+								self.__atom_summary.get('type'),
+								self.__atom_summary['CDATA'])
 
 		for c in self.__atom_category or []:
 			cat = etree.SubElement(entry, 'category', term=c['term'])
@@ -146,7 +150,9 @@ class FeedEntry(object):
 
 		if self.__atom_rights:
 			rights = etree.SubElement(feed, 'rights')
-			rights.text = self.__atom_rights
+			atom_text_construct(rights, self.__atom_rights['rights'],
+								self.__atom_rights.get('type'),
+								self.__atom_rights['CDATA'])
 
 		if extensions:
 			for ext in self.__extensions.values() or []:
@@ -163,23 +169,35 @@ class FeedEntry(object):
 			raise ValueError('Required fields not set')
 		if self.__rss_title:
 			title = etree.SubElement(entry, 'title')
-			title.text = self.__rss_title
+			title.text = etree.CDATA(self.__rss_title['title']) \
+						 if self.__rss_title['CDATA'] else \
+							self.__rss_title['title']
 		if self.__rss_link:
 			link = etree.SubElement(entry, 'link')
 			link.text = self.__rss_link
 		if self.__rss_description and self.__rss_content:
 			description = etree.SubElement(entry, 'description')
-			description.text = self.__rss_description
+			description.text = etree.CDATA(
+				self.__rss_description['description']) \
+				if self.__rss_description['CDATA'] else \
+				   self.__rss_description['description']
 			content = etree.SubElement(entry, '{%s}encoded' %
 									'http://purl.org/rss/1.0/modules/content/')
 			content.text = etree.CDATA(self.__rss_content['content']) \
-				if self.__rss_content['CDATA'] else self.__rss_content['content']
+						   if self.__rss_content['CDATA'] else \
+							  self.__rss_content['content']
 		elif self.__rss_description:
 			description = etree.SubElement(entry, 'description')
-			description.text = self.__rss_description
+			description.text = etree.CDATA(
+				self.__rss_description['description']) \
+				if self.__rss_description['CDATA'] else \
+				   self.__rss_description['description']
 		elif self.__rss_content:
 			description = etree.SubElement(entry, 'description')
-			description.text = self.__rss_content['content']
+			description.text = etree.CDATA(
+				self.__rss_content['content']) \
+				if self.__rss_content['CDATA'] else \
+				   self.__rss_content['content']
 		for a in self.__rss_author or []:
 			author = etree.SubElement(entry, 'author')
 			author.text = a
@@ -214,17 +232,21 @@ class FeedEntry(object):
 
 
 
-	def title(self, title=None):
+	def title(self, title=None, type=None, cdata=False):
 		'''Get or set the title value of the entry. It should contain a human
 		readable title for the entry. Title is mandatory for both ATOM and RSS
 		and should not be blank.
 
 		:param title: The new title of the entry.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: The entriess title.
 		'''
 		if not title is None:
-			self.__atom_title = title
-			self.__rss_title = title
+			self.__atom_title = {'title':title, 'CDATA':cdata}
+			self.__rss_title = {'title':title, 'CDATA':cdata}
+			if type:
+				self.__atom_title['type'] = type
 		return self.__atom_title
 
 
@@ -316,9 +338,16 @@ class FeedEntry(object):
 			self.__atom_author += ensure_format( author,
 					set(['name', 'email', 'uri']), set(['name']))
 			self.__rss_author = []
-			for a in self.__atom_author:
-				if a.get('email'):
-					self.__rss_author.append('%s (%s)' % ( a['email'], a['name'] ))
+			if self.__extensions and \
+			   'dc' in self.__extensions.keys() and \
+			   self.__extensions['dc']['rss']:
+				self.dc.dc_creator([x['name'] for x in self.__atom_author],
+								   replace)
+			else:
+				for a in self.__atom_author:
+					if a.get('email'):
+						self.__rss_author.append(
+							'%s (%s)' % ( a['email'], a['name'] ))
 		return self.__atom_author
 
 
@@ -331,19 +360,20 @@ class FeedEntry(object):
 
 		:param content: The content of the feed entry.
 		:param src: Link to the entries content.
-		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param type: The type of content. 'text'/'html'/'xthml' or a MIME type.
 		:param cdata: If True then content would not be escaped.
 		:returns: Content element of the entry.
 		'''
 		if not src is None:
-			self.__atom_content = {'src':src}
-		elif not content is None:
-			self.__atom_content = {'content':content}
-			self.__rss_content = {'content':content}
-			if not type is None:
+			if type is None:
+				raise ValueError('A type attribute is required in a content element that have a src attribute.')
+			self.__atom_content = {'src':src, 'type':type}
+		elif content:
+			self.__atom_content = {'content':content, 'CDATA':cdata}
+			self.__rss_content = {'content':content, 'CDATA':cdata}
+			if type:
 				self.__atom_content['type'] = type
-			self.__atom_content['CDATA'] = cdata
-			self.__rss_content['CDATA'] = cdata
+
 		return self.__atom_content
 
 
@@ -411,7 +441,7 @@ class FeedEntry(object):
 		return self.__atom_link
 
 
-	def summary(self, summary=None):
+	def summary(self, summary=None, type=None, cdata=False):
 		'''Get or set the summary element of an entry which conveys a short
 		summary, abstract, or excerpt of the entry. Summary is an ATOM only
 		element and should be provided if there either is no content provided for
@@ -421,19 +451,25 @@ class FeedEntry(object):
 		previously set or contains the old value of summary.
 
 		:param summary: Summary of the entries contents.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: Summary of the entries contents.
 		'''
 		if not summary is None:
 			# Replace the RSS description with the summary if it was the summary
 			# before. Not if is the description.
-			if not self.__rss_description or \
-					self.__rss_description == self.__atom_summary:
-				self.__rss_description = summary
-			self.__atom_summary = summary
+			if (not self.__rss_description or
+				self.__rss_description['description'] ==
+				self.__atom_summary['summary']):
+				self.__rss_description = {'description':summary, 'CDATA':cdata}
+			self.__atom_summary = {'summary':summary, 'CDATA':cdata}
+			if type:
+				self.__atom_summary['type'] = type
 		return self.__atom_summary
 
 
-	def description(self, description=None, isSummary=False):
+	def description(self, description=None, isSummary=True,
+					type=None, cdata=False):
 		'''Get or set the description value which is the item synopsis.
 		Description is an RSS only element. For ATOM feeds it is split in summary
 		and content. The isSummary parameter can be used to control which ATOM
@@ -441,14 +477,20 @@ class FeedEntry(object):
 
 		:param description: Description of the entry.
 		:param isSummary: If the description should be used as content or summary.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: The entries description.
 		'''
 		if not description is None:
-			self.__rss_description = description
+			self.__rss_description = {'description':description, 'CDATA':cdata}
 			if isSummary:
-				self.__atom_summary = description
+				self.__atom_summary = {'summary':description, 'CDATA':cdata}
+				if type:
+					self.__atom_summary['type'] = type
 			else:
-				self.__atom_content = description
+				self.__atom_content = {'content':description, 'CDATA':cdata}
+				if type:
+					self.__atom_content['type'] = type
 		return self.__rss_description
 
 
@@ -554,16 +596,20 @@ class FeedEntry(object):
 		return self.published(pubDate)
 
 
-	def rights(self, rights=None):
+	def rights(self, rights=None, type=None, cdata=False):
 		'''Get or set the rights value of the entry which conveys information
 		about rights, e.g. copyrights, held in and over the entry. This ATOM value
 		will also set rss:copyright.
 
 		:param rights: Rights information of the feed.
+		:param type: The type of content. 'text'/'html'/'xthml'.
+		:param cdata: If True then content would not be escaped.
 		:returns: Rights information of the feed.
 		'''
 		if not rights is None:
-			self.__atom_rights = rights
+			self.__atom_rights = {'rights':rights, 'CDATA':cdata}
+			if type:
+				self.__atom_rights['type'] = type
 		return self.__atom_rights
 
 
