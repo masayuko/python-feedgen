@@ -94,7 +94,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-contributor
 
 		:param contributor: Contributor or list of contributors.
-		:param replace: Replace alredy set contributors (deault: False).
+		:param replace: Replace already set contributors (deault: False).
 		:returns: List of contributors.
 		'''
 		if not contributor is None:
@@ -143,7 +143,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-creator
 
 		:param creator: Creator or list of creators.
-		:param replace: Replace alredy set creators (deault: False).
+		:param replace: Replace already set creators (deault: False).
 		:returns: List of creators.
 		'''
 		if not creator is None:
@@ -163,7 +163,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-date
 
 		:param date: Date or list of dates.
-		:param replace: Replace alredy set dates (deault: True).
+		:param replace: Replace already set dates (deault: True).
 		:returns: List of dates.
 		'''
 		if not date is None:
@@ -182,7 +182,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-description
 
 		:param description: Description or list of descriptions.
-		:param replace: Replace alredy set descriptions (deault: True).
+		:param replace: Replace already set descriptions (deault: True).
 		:returns: List of descriptions.
 		'''
 		if not description is None:
@@ -202,7 +202,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-format
 
 		:param format: Format of the resource or list of formats.
-		:param replace: Replace alredy set format (deault: True).
+		:param replace: Replace already set format (deault: True).
 		:returns: Format of the resource.
 		'''
 		if not format is None:
@@ -222,7 +222,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-identifier
 
 		:param identifier: Identifier of the resource or list of identifiers.
-		:param replace: Replace alredy set identifier (deault: True).
+		:param replace: Replace already set identifier (deault: True).
 		:returns: Identifiers of the resource.
 		'''
 		if not identifier is None:
@@ -240,7 +240,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-language
 
 		:param language: Language or list of languages.
-		:param replace: Replace alredy set languages (deault: True).
+		:param replace: Replace already set languages (deault: True).
 		:returns: List of languages.
 		'''
 		if not language is None:
@@ -260,7 +260,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-publisher
 
 		:param publisher: Publisher or list of publishers.
-		:param replace: Replace alredy set publishers (deault: False).
+		:param replace: Replace already set publishers (deault: False).
 		:returns: List of publishers.
 		'''
 		if not publisher is None:
@@ -279,7 +279,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-relation
 
 		:param relation: Relation or list of relations.
-		:param replace: Replace alredy set relations (deault: False).
+		:param replace: Replace already set relations (deault: False).
 		:returns: List of relations.
 		'''
 		if not relation is None:
@@ -299,7 +299,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-rights
 
 		:param rights: Rights information or list of rights information.
-		:param replace: Replace alredy set rightss (deault: False).
+		:param replace: Replace already set rightss (deault: False).
 		:returns: List of rights information.
 		'''
 		if not rights is None:
@@ -324,7 +324,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-source
 
 		:param source: Source or list of sources.
-		:param replace: Replace alredy set sources (deault: False).
+		:param replace: Replace already set sources (deault: False).
 		:returns: List of sources.
 		'''
 		if not source is None:
@@ -343,7 +343,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-subject
 
 		:param subject: Subject or list of subjects.
-		:param replace: Replace alredy set subjects (deault: False).
+		:param replace: Replace already set subjects (deault: False).
 		:returns: List of subjects.
 		'''
 		if not subject is None:
@@ -362,7 +362,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-title
 
 		:param title: Title or list of titles.
-		:param replace: Replace alredy set titles (deault: False).
+		:param replace: Replace already set titles (deault: False).
 		:returns: List of titles.
 		'''
 		if not title is None:
@@ -382,7 +382,7 @@ class DcBaseExtension(BaseExtension):
 		http://dublincore.org/documents/dcmi-terms/#elements-type
 
 		:param type: Type or list of types.
-		:param replace: Replace alredy set types (deault: False).
+		:param replace: Replace already set types (deault: False).
 		:returns: List of types.
 		'''
 		if not type is None:
