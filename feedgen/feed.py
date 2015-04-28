@@ -148,7 +148,7 @@ class FeedGenerator(object):
 			if c.get('label'):
 				cat.attrib['label'] = c['label']
 
-		# Add author elements
+		# Add contributor elements
 		for c in self.__atom_contributor or []:
 			# Atom requires a name. Skip elements without.
 			if not c.get('name'):
