@@ -14,6 +14,8 @@ import dateutil.parser
 import dateutil.tz
 from feedgen.util import ensure_format, atom_content, atom_text_construct
 from feedgen.compat import string_types
+import time
+import email.utils
 
 
 class FeedEntry(object):
@@ -220,8 +222,9 @@ class FeedEntry(object):
 			enclosure.attrib['type'] = self.__rss_enclosure['type']
 		if self.__rss_pubDate:
 			pubDate = etree.SubElement(entry, 'pubDate')
-			pubDate.text = self.__rss_pubDate.strftime(
-					'%a, %d %b %Y %H:%M:%S %z')
+			pubDate.text = email.utils.formatdate(
+				time.mktime(self.__rss_pubDate.astimezone(
+					dateutil.tz.tzutc()).timetuple()))
 
 		if extensions:
 			for ext in self.__extensions.values() or []:
