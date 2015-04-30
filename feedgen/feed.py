@@ -135,7 +135,8 @@ class FeedGenerator(object):
 		for l in self.__atom_link or []:
 			link = etree.SubElement(feed, 'link', href=l['href'])
 			if l.get('rel'):
-				link.attrib['rel'] = l['rel']
+				if l['rel'] != 'alternate':
+					link.attrib['rel'] = l['rel']
 			if l.get('type'):
 				link.attrib['type'] = l['type']
 			if l.get('hreflang'):
@@ -607,10 +608,16 @@ class FeedGenerator(object):
 			self.__atom_link += ensure_format( link,
 					set(['href', 'rel', 'type', 'hreflang', 'title', 'length']),
 					set(['href']),
-					{'rel':['alternate', 'enclosure', 'related', 'self', 'via']} )
+					{'rel':['alternate', 'enclosure', 'related', 'self', 'via']},
+					{'rel': 'alternate'} )
 			# RSS only needs one URL. We use the first link for RSS:
-			if len(self.__atom_link) > 0:
-				self.__rss_link = self.__atom_link[-1]['href']
+			if replace:
+				self.__rss_link = None
+			if self.__rss_link is None:
+				for l in self.__atom_link:
+					if l.get('rel') == 'alternate':
+						self.__rss_link = l['href']
+						break
 		# return the set with more information (atom)
 		return self.__atom_link
 

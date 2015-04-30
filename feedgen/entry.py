@@ -108,7 +108,8 @@ class FeedEntry(object):
 		for l in self.__atom_link or []:
 			link = etree.SubElement(entry, 'link', href=l['href'])
 			if l.get('rel'):
-				link.attrib['rel'] = l['rel']
+				if l['rel'] != 'alternate':
+					link.attrib['rel'] = l['rel']
 			if l.get('type'):
 				link.attrib['type'] = l['type']
 			if l.get('hreflang'):
@@ -433,8 +434,10 @@ class FeedEntry(object):
 					{'rel':['alternate', 'enclosure', 'related', 'self', 'via']},
 					{'rel': 'alternate'} )
 			# RSS only needs one URL. We use the first link for RSS:
+			if replace:
+				self.__rss_link = None
 			for l in self.__atom_link:
-				if l.get('rel') == 'alternate':
+				if l.get('rel') == 'alternate' and self.__rss_link is None:
 					self.__rss_link = l['href']
 				elif l.get('rel') == 'enclosure':
 					self.__rss_enclosure = {'url':l['href']}
