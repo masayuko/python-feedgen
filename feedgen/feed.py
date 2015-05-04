@@ -64,6 +64,7 @@ class FeedGenerator(object):
 		# http://www.rssboard.org/rss-specification
 		self.__rss_title       = None
 		self.__rss_link        = None
+		self.__rss_atom_link   = None
 		self.__rss_description = None
 
 		self.__rss_category       = None
@@ -273,21 +274,12 @@ class FeedGenerator(object):
 		desc.text = etree.CDATA(self.__rss_description['description']) \
 					if self.__rss_description['CDATA'] else \
 					   self.__rss_description['description']
-		for ln in  self.__atom_link or []:
+		if self.__rss_atom_link:
 			# It is recommended to include a atom self link in rss documents…
-			if ln.get('rel') == 'self':
-				selflink = etree.SubElement(channel,
-						'{http://www.w3.org/2005/Atom}link',
-						href=ln['href'], rel='self')
-				if ln.get('type'):
-					selflink.attrib['type'] = ln['type']
-				if ln.get('hreflang'):
-					selflink.attrib['hreflang'] = ln['hreflang']
-				if ln.get('title'):
-					selflink.attrib['title'] = ln['title']
-				if ln.get('length'):
-					selflink.attrib['length'] = ln['length']
-				break
+			selflink = etree.SubElement(channel,
+										'{http://www.w3.org/2005/Atom}link',
+										href=self.__rss_atom_link,
+										rel='self')
 		if self.__rss_category:
 			for cat in self.__rss_category:
 				category = etree.SubElement(channel, 'category')
@@ -613,13 +605,25 @@ class FeedGenerator(object):
 			# RSS only needs one URL. We use the first link for RSS:
 			if replace:
 				self.__rss_link = None
+				self.__rss_atom_link = None
 			if self.__rss_link is None:
 				for l in self.__atom_link:
 					if l.get('rel') == 'alternate':
 						self.__rss_link = l['href']
 						break
+			for l in self.__atom_link:
+				if l.get('rel') == 'self':
+					if self.__rss_atom_link is None:
+						self.__rss_atom_link = l['href']
+					else:
+						raise ValueError('Duplicate self link')
 		# return the set with more information (atom)
 		return self.__atom_link
+
+
+	def rss_atom_link(self, href):
+		self.__rss_atom_link = href
+		return self.__rss_atom_link
 
 
 	def category(self, category=None, replace=False, **kwargs):
