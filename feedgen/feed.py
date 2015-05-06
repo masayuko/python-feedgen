@@ -64,7 +64,7 @@ class FeedGenerator(object):
 		# http://www.rssboard.org/rss-specification
 		self.__rss_title       = None
 		self.__rss_link        = None
-		self.__rss_atom_link   = None
+		self.__rss_atom_link_self = None
 		self.__rss_description = None
 
 		self.__rss_category       = None
@@ -274,11 +274,11 @@ class FeedGenerator(object):
 		desc.text = etree.CDATA(self.__rss_description['description']) \
 					if self.__rss_description['CDATA'] else \
 					   self.__rss_description['description']
-		if self.__rss_atom_link:
+		if self.__rss_atom_link_self:
 			# It is recommended to include a atom self link in rss documents…
 			selflink = etree.SubElement(channel,
 										'{http://www.w3.org/2005/Atom}link',
-										href=self.__rss_atom_link,
+										href=self.__rss_atom_link_self,
 										rel='self')
 		if self.__rss_category:
 			for cat in self.__rss_category:
@@ -605,7 +605,7 @@ class FeedGenerator(object):
 			# RSS only needs one URL. We use the first link for RSS:
 			if replace:
 				self.__rss_link = None
-				self.__rss_atom_link = None
+				self.__rss_atom_link_self = None
 			if self.__rss_link is None:
 				for l in self.__atom_link:
 					if l.get('rel') == 'alternate':
@@ -613,17 +613,17 @@ class FeedGenerator(object):
 						break
 			for l in self.__atom_link:
 				if l.get('rel') == 'self':
-					if self.__rss_atom_link is None:
-						self.__rss_atom_link = l['href']
+					if self.__rss_atom_link_self is None:
+						self.__rss_atom_link_self = l['href']
 					else:
 						raise ValueError('Duplicate self link')
 		# return the set with more information (atom)
 		return self.__atom_link
 
 
-	def rss_atom_link(self, href):
-		self.__rss_atom_link = href
-		return self.__rss_atom_link
+	def rss_atom_link_self(self, href):
+		self.__rss_atom_link_self = href
+		return self.__rss_atom_link_self
 
 
 	def category(self, category=None, replace=False, **kwargs):
