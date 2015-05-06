@@ -257,8 +257,10 @@ class FeedGenerator(object):
 				if ext.get('rss'):
 					 nsmap.update( ext['inst'].extend_ns() )
 
-		nsmap.update({'atom':  ATOM_NS,
-			'content': 'http://purl.org/rss/1.0/modules/content/'})
+		if self.__rss_atom_link_self or self.__rss_atom_link_hub:
+			nsmap.update({'atom':  ATOM_NS})
+
+		nsmap.update({'content':'http://purl.org/rss/1.0/modules/content/'})
 
 		feed = etree.Element('rss', version='2.0', nsmap=nsmap )
 		channel = etree.SubElement(feed, 'channel')
