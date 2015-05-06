@@ -66,6 +66,7 @@ class FeedGenerator(object):
 		self.__rss_title       = None
 		self.__rss_link        = None
 		self.__rss_atom_link_self = None
+		self.__rss_atom_link_hub = None
 		self.__rss_description = None
 
 		self.__rss_category       = None
@@ -281,6 +282,12 @@ class FeedGenerator(object):
 										'{%s}link' % ATOM_NS,
 										href=self.__rss_atom_link_self,
 										rel='self')
+		if self.__rss_atom_link_hub:
+			# For PubSubHubBub
+			selflink = etree.SubElement(channel,
+										'{%s}link' % ATOM_NS,
+										href=self.__rss_atom_link_hub,
+										rel='hub')
 		if self.__rss_category:
 			for cat in self.__rss_category:
 				category = etree.SubElement(channel, 'category')
@@ -601,12 +608,14 @@ class FeedGenerator(object):
 			self.__atom_link += ensure_format( link,
 					set(['href', 'rel', 'type', 'hreflang', 'title', 'length']),
 					set(['href']),
-					{'rel':['alternate', 'enclosure', 'related', 'self', 'via']},
+					{'rel': ['alternate', 'enclosure', 'related', 'self', 'via',
+							 'hub']},
 					{'rel': 'alternate'} )
 			# RSS only needs one URL. We use the first link for RSS:
 			if replace:
 				self.__rss_link = None
 				self.__rss_atom_link_self = None
+				self.__rss_atom_link_hub = None
 			if self.__rss_link is None:
 				for l in self.__atom_link:
 					if l.get('rel') == 'alternate':
@@ -618,6 +627,11 @@ class FeedGenerator(object):
 						self.__rss_atom_link_self = l['href']
 					else:
 						raise ValueError('Duplicate self link')
+				elif l.get('ref') == 'hub':
+					if self.__rss_atom_link_hub is None:
+						self.__rss_atom_link_hub = l['href']
+					else:
+						raise ValueError('Duplicate hub link')
 		# return the set with more information (atom)
 		return self.__atom_link
 
