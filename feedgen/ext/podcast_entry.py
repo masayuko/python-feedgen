@@ -128,7 +128,7 @@ class PodcastEntryExtension(BaseEntryExtension):
 		'''
 		if not itunes_image is None:
 			if not ( itunes_image.endswith('.jpg') or itunes_image.endswith('.png') ):
-				ValueError('Image file must be png or jpg')
+				raise ValueError('Image file must be png or jpg')
 			self.__itunes_image = itunes_image
 		return self.__itunes_image
 
@@ -151,7 +151,7 @@ class PodcastEntryExtension(BaseEntryExtension):
 			itunes_duration = str(itunes_duration)
 			if len(itunes_duration.split(':')) > 3 or \
 					itunes_duration.lstrip('0123456789:') != '':
-				ValueError('Invalid duration format')
+				raise ValueError('Invalid duration format')
 			self.__itunes_duration = itunes_duration
 		return self.itunes_duration
 
