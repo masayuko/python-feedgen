@@ -24,6 +24,7 @@ import email.utils
 
 _feedgen_version = feedgen.version.version_str
 
+ATOM_NS = 'http://www.w3.org/2005/Atom'
 
 class FeedGenerator(object):
 	'''FeedGenerator for generating ATOM and RSS feeds.
@@ -99,7 +100,7 @@ class FeedGenerator(object):
 				if ext.get('atom'):
 					 nsmap.update( ext['inst'].extend_ns() )
 
-		feed = etree.Element('feed', xmlns='http://www.w3.org/2005/Atom', nsmap=nsmap)
+		feed = etree.Element('feed', xmlns=ATOM_NS, nsmap=nsmap)
 		if self.__atom_feed_xml_lang:
 			feed.attrib['{http://www.w3.org/XML/1998/namespace}lang'] = \
 					self.__atom_feed_xml_lang
@@ -255,7 +256,7 @@ class FeedGenerator(object):
 				if ext.get('rss'):
 					 nsmap.update( ext['inst'].extend_ns() )
 
-		nsmap.update({'atom':  'http://www.w3.org/2005/Atom',
+		nsmap.update({'atom':  ATOM_NS,
 			'content': 'http://purl.org/rss/1.0/modules/content/'})
 
 		feed = etree.Element('rss', version='2.0', nsmap=nsmap )
@@ -277,7 +278,7 @@ class FeedGenerator(object):
 		if self.__rss_atom_link_self:
 			# It is recommended to include a atom self link in rss documents…
 			selflink = etree.SubElement(channel,
-										'{http://www.w3.org/2005/Atom}link',
+										'{%s}link' % ATOM_NS,
 										href=self.__rss_atom_link_self,
 										rel='self')
 		if self.__rss_category:
