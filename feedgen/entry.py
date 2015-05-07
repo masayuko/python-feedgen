@@ -453,6 +453,10 @@ class FeedEntry(object):
 		return self.__atom_link
 
 
+	def rss_link(self, href):
+		self.__rss_link = href
+
+
 	def summary(self, summary=None, type=None, cdata=False):
 		'''Get or set the summary element of an entry which conveys a short
 		summary, abstract, or excerpt of the entry. Summary is an ATOM only
