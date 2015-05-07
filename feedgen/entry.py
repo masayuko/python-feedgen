@@ -381,6 +381,12 @@ class FeedEntry(object):
 		return self.__atom_content
 
 
+	def rss_content(self, content=None, cdata=False):
+		if content is not None:
+			self.__rss_content = {'content':content, 'CDATA':cdata}
+		return self.__rss_content
+
+
 	def link(self, link=None, replace=False, **kwargs):
 		'''Get or set link data. An link element is a dict with the fields href,
 		rel, type, hreflang, title, and length. Href is mandatory for ATOM.
