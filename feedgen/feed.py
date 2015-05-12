@@ -481,6 +481,8 @@ class FeedGenerator(object):
 				raise ValueError('Invalid datetime format')
 			if updated.tzinfo is None:
 				raise ValueError('Datetime object has no timezone info')
+			if updated.microsecond > 0:
+				updated = updated.replace(microsecond=0)
 			self.__atom_updated = updated
 			self.__rss_lastBuildDate = updated
 
