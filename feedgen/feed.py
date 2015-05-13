@@ -283,7 +283,8 @@ class FeedGenerator(object):
 			selflink = etree.SubElement(channel,
 										'{%s}link' % ATOM_NS,
 										href=self.__rss_atom_link_self,
-										rel='self')
+										rel='self',
+										type='application/rss+xml')
 		if self.__rss_atom_link_hub:
 			# For PubSubHubBub
 			selflink = etree.SubElement(channel,
