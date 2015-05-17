@@ -65,8 +65,7 @@ class FeedGenerator(object):
 		# http://www.rssboard.org/rss-specification
 		self.__rss_title       = None
 		self.__rss_link        = None
-		self.__rss_atom_link_self = None
-		self.__rss_atom_link_hub = None
+		self.__rss_atom_link = {}
 		self.__rss_description = None
 
 		self.__rss_category       = None
@@ -257,7 +256,7 @@ class FeedGenerator(object):
 				if ext.get('rss'):
 					 nsmap.update( ext['inst'].extend_ns() )
 
-		if self.__rss_atom_link_self or self.__rss_atom_link_hub:
+		if len(self.__rss_atom_link) > 0:
 			nsmap.update({'atom':  ATOM_NS})
 
 		nsmap.update({'content':'http://purl.org/rss/1.0/modules/content/'})
@@ -278,19 +277,16 @@ class FeedGenerator(object):
 		desc.text = etree.CDATA(self.__rss_description['description']) \
 					if self.__rss_description['CDATA'] else \
 					   self.__rss_description['description']
-		if self.__rss_atom_link_self:
-			# It is recommended to include a atom self link in rss documents…
-			selflink = etree.SubElement(channel,
-										'{%s}link' % ATOM_NS,
-										href=self.__rss_atom_link_self,
-										rel='self',
-										type='application/rss+xml')
-		if self.__rss_atom_link_hub:
-			# For PubSubHubBub
-			selflink = etree.SubElement(channel,
-										'{%s}link' % ATOM_NS,
-										href=self.__rss_atom_link_hub,
-										rel='hub')
+
+		version = sys.version_info[0]
+		if version == 2:
+			linkitems = self.__rss_atom_link.iteritems()
+		else:
+			linkitems = self.__rss_atom_link.items()
+		for rel,href in linkitems:
+			link = etree.SubElement(channel, '{%s}link' % ATOM_NS, href=href,
+									rel=rel)
+
 		if self.__rss_category:
 			for cat in self.__rss_category:
 				category = etree.SubElement(channel, 'category')
@@ -614,36 +610,47 @@ class FeedGenerator(object):
 					set(['href', 'rel', 'type', 'hreflang', 'title', 'length']),
 					set(['href']),
 					{'rel': ['alternate', 'enclosure', 'related', 'self', 'via',
-							 'hub']},
+							 'hub', 'first', 'last', 'previous', 'next',
+							 'prev-archive', 'next-archive', 'current']},
 					{'rel': 'alternate'} )
 			# RSS only needs one URL. We use the first link for RSS:
 			if replace:
 				self.__rss_link = None
-				self.__rss_atom_link_self = None
-				self.__rss_atom_link_hub = None
-			if self.__rss_link is None:
-				for l in self.__atom_link:
-					if l.get('rel') == 'alternate':
-						self.__rss_link = l['href']
-						break
+				self.__rss_atom_link = {}
 			for l in self.__atom_link:
-				if l.get('rel') == 'self':
-					if self.__rss_atom_link_self is None:
-						self.__rss_atom_link_self = l['href']
+				rel = l.get('rel')
+				if rel == 'alternate' and self.__rss_link is None:
+					self.__rss_link = l['href']
+				elif rel in ['self', 'hub', 'first', 'last', 'previous', 'next',
+							 'prev-archive', 'next-archive', 'current']:
+					if rel in self.__rss_atom_link:
+						raise ValueError('Duplicate ref={} link'.format(rel))
 					else:
-						raise ValueError('Duplicate self link')
-				elif l.get('ref') == 'hub':
-					if self.__rss_atom_link_hub is None:
-						self.__rss_atom_link_hub = l['href']
-					else:
-						raise ValueError('Duplicate hub link')
+						self.__rss_atom_link[rel] = l['href']
 		# return the set with more information (atom)
 		return self.__atom_link
 
 
 	def rss_atom_link_self(self, href):
-		self.__rss_atom_link_self = href
-		return self.__rss_atom_link_self
+		self.__rss_atom_link['self'] = href
+		return self.__rss_atom_link['self']
+
+
+	def rss_atom_link(self, link=None, replace=False, **kwargs):
+		if link is None and kwargs:
+			link = kwargs
+		if not link is None:
+			if replace or self.__rss_atom_link is None:
+				self.__rss_atom_link = {}
+			for l in link:
+				rel = l.get('rel')
+				if rel in ['self', 'hub', 'first', 'last', 'previous', 'next',
+						   'prev-archive', 'next-archive', 'current']:
+					if l.get('href'):
+						self.__rss_atom_link[rel] = l['href']
+					else:
+						raise ValueError('href of ref={} link is missing'.format(rel))
+		return self.__rss_atom_link
 
 
 	def category(self, category=None, replace=False, **kwargs):
