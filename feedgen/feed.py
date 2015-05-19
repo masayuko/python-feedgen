@@ -50,8 +50,8 @@ class FeedGenerator(object):
 		self.__atom_category    = None # {term*, scheme, label}
 		self.__atom_contributor = None
 		self.__atom_generator   = {
-				'value'  :'python-feedgen',
-				'url'    :'http://lkiesow.github.io/python-feedgen',
+				'value'  :'modified python-feedgen',
+				'url'    :'http://masayuko.github.io/python-feedgen',
 				'version':feedgen.version.version_str } #{value*,uri,version}
 		self.__atom_icon     = None
 		self.__atom_logo     = None
@@ -175,8 +175,6 @@ class FeedGenerator(object):
 			generator.text = self.__atom_generator['value']
 			if self.__atom_generator.get('uri'):
 				generator.attrib['uri'] = self.__atom_generator['uri']
-			if self.__atom_generator.get('version'):
-				generator.attrib['version'] = self.__atom_generator['version']
 
 		if self.__atom_icon:
 			icon = etree.SubElement(feed, 'icon')
