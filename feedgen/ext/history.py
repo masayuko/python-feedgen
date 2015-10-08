@@ -44,6 +44,14 @@ class HistoryExtension(BaseExtension):
             archive = etree.SubElement(xml_elem,'{%s}archive' % (HISTORY_NS,))
         return xml_elem
 
+    def history_complete(self, value=True):
+        self._history_complete = value
+        return value
+
+    def history_archive(self, value=True):
+        self._history_archive = value
+        return value
+
     def extend_atom(self, atom_feed):
         self._extend_xml(atom_feed)
         return atom_feed
