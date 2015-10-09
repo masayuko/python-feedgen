@@ -24,6 +24,7 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from lxml import etree
 from feedgen.ext.base import BaseExtension
 
 HISTORY_NS = 'http://purl.org/syndication/history/1.0'
